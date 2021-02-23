@@ -1,0 +1,96 @@
+T3F_PLATFORM_NAME = macos
+T3F_CXX_STDLIB = -l$(MACOS_CXX_STDLIB)
+CC = $(MACOS_CC)
+CFLAGS = $(APP_CFLAGS) $(T3F_CFLAGS) $(MACOS_ARCHITECTURES) $(MACOS_CONFIG_CFLAGS) $(MACOS_SYS_ROOT) $(MACOS_MIN_VERSION) $(MACOS_CXX_STANDARD) $(APP_CFLAGS) $(MACOS_CFLAGS) -I/usr/local/include
+CXX = $(MACOS_CXX)
+CXXFLAGS = $(CFLAGS) -stdlib=lib$(MACOS_CXX_STDLIB)
+LFLAGS = $(MACOS_CONFIG_LFLAGS) $(MACOS_ARCHITECTURES) $(MACOS_SYS_ROOT) $(MACOS_MIN_VERSION) -L/usr/local/lib -stdlib=lib$(MACOS_CXX_STDLIB)
+ALLEGRO_SUFFIX = $(MACOS_CONFIG_ALLEGRO_SUFFIX)
+PKG_CONFIG_OPTIONS = $(MACOS_CONFIG_PKG_CONFIG_OPTIONS)
+T3F_PLATFORM_OBJECTS = t3f/menu.o $(MACOS_PLATFORM_OBJECTS)
+T3F_PLATFORM_LIBRARIES =\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_audio$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_image$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_acodec$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_font$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_ttf$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_primitives$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_color$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_memfile$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_dialog$(ALLEGRO_SUFFIX)-5`\
+	`pkg-config $(PKG_CONFIG_OPTIONS) allegro_main$(ALLEGRO_SUFFIX)-5`\
+	-framework IOKit\
+	-framework AudioToolbox\
+	-framework OpenGL\
+	-framework OpenAL\
+	-framework Cocoa\
+	-framework CoreVideo\
+	$(MACOS_CONFIG_PLATFORM_LIBS)\
+	$(MACOS_CONFIG_DEPEND_LIBS)\
+	$(MACOS_PLATFORM_LIBS)\
+	$(MACOS_DEPEND_LIBS)
+DEL_COMMAND = rm -f
+DEL_FOLDER_COMMAND = rm -rf
+SED_COMMAND = sed -i ''
+PLATFORM_CLEAN = rm -rf $(APP_PACKAGE_DIR)/$(APP_TITLE).app
+COPY_COMMAND = cp
+PATH_SEPARATOR = /
+
+include makefile.common
+
+prepare_platform:
+	@echo Ready to build...
+
+../icons/macos_icon.icns: ../icons/16.png ../icons/32.png ../icons/64.png ../icons/128.png ../icons/256.png ../icons/512.png ../icons/1024.png
+	@mkdir -p temp.iconset
+	@cp ../icons/16.png temp.iconset/icon_16x16.png
+	@cp ../icons/32.png temp.iconset/icon_16x16@2x.png
+	@cp ../icons/32.png temp.iconset/icon_32x32.png
+	@cp ../icons/64.png temp.iconset/icon_32x32@2x.png
+	@cp ../icons/64.png temp.iconset/icon_64x64.png
+	@cp ../icons/128.png temp.iconset/icon_64x64@2x.png
+	@cp ../icons/128.png temp.iconset/icon_128x128.png
+	@cp ../icons/256.png temp.iconset/icon_128x128@2x.png
+	@cp ../icons/256.png temp.iconset/icon_256x256.png
+	@cp ../icons/512.png temp.iconset/icon_256x256@2x.png
+	@cp ../icons/512.png temp.iconset/icon_512x512.png
+	@cp ../icons/1024.png temp.iconset/icon_512x512@2x.png
+	@iconutil --convert icns temp.iconset -o ../icons/macos_icon.icns
+	@rm -rf temp.iconset
+
+mac_build_bundle : ../icons/macos_icon.icns
+	@$(DEL_FOLDER_COMMAND) $(APP_PACKAGE_DIR)/$(APP_TITLE).app
+	@mkdir $(APP_PACKAGE_DIR)/$(APP_TITLE).app
+	@mkdir $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents
+	@mkdir $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/MacOS
+	@mkdir $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Resources
+	@mkdir $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Resources/$(APP_TITLE)
+	@cp $(APP_EXE_NAME) $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/MacOS/$(APP_TITLE)
+	@cp ../macos/blobs/* $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/MacOS
+	@mv ../icons/macos_icon.icns $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Resources/$(APP_TITLE).icns
+	@cp -a ../bin/data $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Resources/$(APP_TITLE)
+	@cp -a ../docs $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Resources/$(APP_TITLE)
+	@cp ../macos/Info.plist $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents
+	@cp ../macos/Pkginfo $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents
+	@sed -i '' "s|T3F_APP_EXECUTABLE|$(APP_TITLE)|" $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Info.plist
+	@sed -i '' "s|T3F_APP_ICON|$(APP_TITLE).icns|" $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Info.plist
+	@sed -i '' "s|T3F_APP_DISPLAY_NAME|$(APP_TITLE)|" $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Info.plist
+	@sed -i '' "s|T3F_APP_VERSION|$(APP_VERSION)|" $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Info.plist
+	@sed -i '' "s|T3F_APP_PACKAGE|$(APP_ANDROID_PACKAGE)|" $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Info.plist
+	@echo Application bundle created!
+
+mac_bundle:
+	make clean
+	make MACOS_ARCHITECTURES="-arch i386" APP_EXE_SUFFIX=-i386 MACOS_SDK=MacOSX10.13.sdk MACOS_CXX_STDLIB=stdc++
+	make clean
+	make MACOS_ARCHITECTURES="-arch x86_64" APP_EXE_SUFFIX=-x86_64 MACOS_SDK=MacOSX.sdk
+	make clean
+	make MACOS_ARCHITECTURES="-arch arm64" APP_EXE_SUFFIX=-arm64 MACOS_SDK=MacOSX.sdk
+	lipo -create $(APP_EXE_NAME)-i386 $(APP_EXE_NAME)-x86_64 $(APP_EXE_NAME)-arm64 -output $(APP_EXE_NAME)
+	rm $(APP_EXE_NAME)-i386 $(APP_EXE_NAME)-x86_64 $(APP_EXE_NAME)-arm64
+	make mac_build_bundle
+
+mac_package: mac_bundle
+	rm -rf $(APP_PACKAGE_DIR)/$(APP_PACKAGE_NAME)-macos.dmg
+	../macos/create-dmg --volname $(APP_TITLE) --volicon $(APP_PACKAGE_DIR)/$(APP_TITLE).app/Contents/Resources/$(APP_TITLE).icns --window-size 400 232 --icon-size 96 --icon "$(APP_TITLE)" 110 100 --app-drop-link 280 100 $(APP_PACKAGE_DIR)/$(APP_PACKAGE_NAME)-macos.dmg $(APP_PACKAGE_DIR)/$(APP_TITLE).app
